@@ -20,11 +20,9 @@
 package org.pentaho.di.ui.job.entries.zipfile;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.MessageBox; 
 import org.eclipse.swt.custom.CCombo;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
-import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -35,28 +33,31 @@ import org.eclipse.swt.layout.FormAttachment;
 import org.eclipse.swt.layout.FormData;
 import org.eclipse.swt.layout.FormLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
-import org.pentaho.di.ui.core.dialog.EnterSelectionDialog;
 import org.eclipse.swt.widgets.FileDialog;
-import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.Props;
+import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.job.JobMeta;
-import org.pentaho.di.ui.core.gui.WindowProperty;
-import org.pentaho.di.ui.core.widget.TextVar;
-import org.pentaho.di.ui.job.dialog.JobDialog;
-import org.pentaho.di.ui.job.entry.JobEntryDialog; 
+import org.pentaho.di.job.entries.zipfile.JobEntryZipFile;
 import org.pentaho.di.job.entry.JobEntryDialogInterface;
 import org.pentaho.di.job.entry.JobEntryInterface;
 import org.pentaho.di.repository.Repository;
+import org.pentaho.di.ui.core.dialog.EnterSelectionDialog;
+import org.pentaho.di.ui.core.gui.WindowProperty;
+import org.pentaho.di.ui.core.widget.TextVar;
+import org.pentaho.di.ui.job.dialog.JobDialog;
+import org.pentaho.di.ui.job.entry.JobEntryDialog;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
-import org.pentaho.di.job.entries.zipfile.JobEntryZipFile;
 import org.pentaho.di.job.entries.zipfile.Messages;
 
 
@@ -68,7 +69,9 @@ import org.pentaho.di.job.entries.zipfile.Messages;
  */
 public class JobEntryZipFileDialog extends JobEntryDialog implements JobEntryDialogInterface
 {
-   private static final String[] FILETYPES = new String[] {
+	private static Class<?> PKG = JobEntryZipFile.class; // for i18n purposes, needed by Translator2!!   $NON-NLS-1$
+
+    private static final String[] FILETYPES = new String[] {
 			Messages.getString("JobZipFiles.Filetype.Zip"),
 			Messages.getString("JobZipFiles.Filetype.All")};
 	
@@ -107,6 +110,10 @@ public class JobEntryZipFileDialog extends JobEntryDialog implements JobEntryDia
 	private Label wlWildcardExclude;
 	private TextVar wWildcardExclude;
 	private FormData fdlWildcardExclude, fdWildcardExclude;
+
+    private Label wlIncludeSubfolders;
+    private Button wIncludeSubfolders;
+    private FormData fdlIncludeSubfolders, fdIncludeSubfolders;
 
 	private Label wlCompressionRate;
 	private  CCombo wCompressionRate;
@@ -319,8 +326,8 @@ public class JobEntryZipFileDialog extends JobEntryDialog implements JobEntryDia
 		wbSourceFile.setLayoutData(fdbSourceFile);
 				
 		
-		wSourceDirectory = new TextVar(jobMeta,wSourceFiles, SWT.SINGLE | SWT.LEFT | SWT.BORDER, Messages
-			.getString("JobZipFiles.SourceDir.Tooltip"));
+		wSourceDirectory = new TextVar(jobMeta,wSourceFiles, SWT.SINGLE | SWT.LEFT | SWT.BORDER, 
+				Messages.getString("JobZipFiles.SourceDir.Tooltip"));
 		props.setLook(wSourceDirectory);
 		wSourceDirectory.addModifyListener(lsMod);
 		fdSourceDirectory = new FormData();
@@ -338,8 +345,8 @@ public class JobEntryZipFileDialog extends JobEntryDialog implements JobEntryDia
 		fdlWildcard.top = new FormAttachment(wSourceDirectory, margin);
 		fdlWildcard.right = new FormAttachment(middle, -margin);
 		wlWildcard.setLayoutData(fdlWildcard);
-		wWildcard = new TextVar(jobMeta,wSourceFiles, SWT.SINGLE | SWT.LEFT | SWT.BORDER, Messages
-			.getString("JobZipFiles.Wildcard.Tooltip"));
+		wWildcard = new TextVar(jobMeta,wSourceFiles, SWT.SINGLE | SWT.LEFT | SWT.BORDER, 
+				Messages.getString("JobZipFiles.Wildcard.Tooltip"));
 		props.setLook(wWildcard);
 		wWildcard.addModifyListener(lsMod);
 		fdWildcard = new FormData();
@@ -357,8 +364,8 @@ public class JobEntryZipFileDialog extends JobEntryDialog implements JobEntryDia
 		fdlWildcardExclude.top = new FormAttachment(wWildcard, margin);
 		fdlWildcardExclude.right = new FormAttachment(middle, -margin);
 		wlWildcardExclude.setLayoutData(fdlWildcardExclude);
-		wWildcardExclude = new TextVar(jobMeta,wSourceFiles, SWT.SINGLE | SWT.LEFT | SWT.BORDER, Messages
-			.getString("JobZipFiles.WildcardExclude.Tooltip"));
+		wWildcardExclude = new TextVar(jobMeta,wSourceFiles, SWT.SINGLE | SWT.LEFT | SWT.BORDER, 
+				Messages.getString("JobZipFiles.WildcardExclude.Tooltip"));
 		props.setLook(wWildcardExclude);
 		wWildcardExclude.addModifyListener(lsMod);
 		fdWildcardExclude = new FormData();
@@ -366,7 +373,32 @@ public class JobEntryZipFileDialog extends JobEntryDialog implements JobEntryDia
 		fdWildcardExclude.top = new FormAttachment(wWildcard, margin);
 		fdWildcardExclude.right = new FormAttachment(100, 0);
 		wWildcardExclude.setLayoutData(fdWildcardExclude);
-        
+
+	    // Include sub-folders?
+		//
+        wlIncludeSubfolders = new Label(wSourceFiles, SWT.RIGHT);
+        wlIncludeSubfolders.setText(Messages.getString("JobZipFiles.IncludeSubfolders.Label"));
+        props.setLook(wlIncludeSubfolders);
+        fdlIncludeSubfolders = new FormData();
+        fdlIncludeSubfolders.left = new FormAttachment(0, 0);
+        fdlIncludeSubfolders.top = new FormAttachment(wWildcardExclude, margin);
+        fdlIncludeSubfolders.right = new FormAttachment(middle, -margin);
+        wlIncludeSubfolders.setLayoutData(fdlIncludeSubfolders);
+        wIncludeSubfolders = new Button(wSourceFiles, SWT.CHECK);
+        props.setLook(wIncludeSubfolders);
+        wIncludeSubfolders.setToolTipText(Messages.getString("JobZipFiles.IncludeSubfolders.Tooltip"));
+        fdIncludeSubfolders = new FormData();
+        fdIncludeSubfolders.left = new FormAttachment(middle, 0);
+        fdIncludeSubfolders.top = new FormAttachment(wWildcardExclude, margin);
+        fdIncludeSubfolders.right = new FormAttachment(100, 0);
+        wIncludeSubfolders.setLayoutData(fdIncludeSubfolders);
+        wIncludeSubfolders.addSelectionListener(new SelectionAdapter()
+        {
+            public void widgetSelected(SelectionEvent e)
+            {
+                jobEntry.setChanged();
+            }
+        });
 
         fdSourceFiles = new FormData();
         fdSourceFiles.left = new FormAttachment(0, margin);
@@ -433,7 +465,7 @@ public class JobEntryZipFileDialog extends JobEntryDialog implements JobEntryDia
 			{
 				public void widgetSelected(SelectionEvent e)
 				{
-					FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+					FileDialog dialog = new FileDialog(shell, SWT.SAVE);
 					//dialog.setFilterExtensions(new String[] {"*"});
 					dialog.setFilterExtensions(new String[] {"*.zip;*.ZIP", "*"});
 					if (wZipFilename.getText()!=null)
@@ -769,8 +801,8 @@ public class JobEntryZipFileDialog extends JobEntryDialog implements JobEntryDia
 		fdbMovetoDirectory.top  = new FormAttachment(wAfterZip, margin);
 		wbMovetoDirectory.setLayoutData(fdbMovetoDirectory);
 		
-		wMovetoDirectory = new TextVar(jobMeta,wSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER, Messages
-			.getString("JobZipFiles.MovetoDirectory.Tooltip"));
+		wMovetoDirectory = new TextVar(jobMeta,wSettings, SWT.SINGLE | SWT.LEFT | SWT.BORDER, 
+				Messages.getString("JobZipFiles.MovetoDirectory.Tooltip"));
 		props.setLook(wMovetoDirectory);
 		wMovetoDirectory.addModifyListener(lsMod);
 		fdMovetoDirectory = new FormData();
@@ -1092,10 +1124,10 @@ public class JobEntryZipFileDialog extends JobEntryDialog implements JobEntryDia
 			wIfFileExists.select(2); // NOTHING
 		}
 
-		if (jobEntry.getWildcard()!= null) wWildcard.setText( jobEntry.getWildcard() );
-		if (jobEntry.getWildcardExclude()!= null) wWildcardExclude.setText( jobEntry.getWildcardExclude() );
-		if (jobEntry.getSourceDirectory()!= null) wSourceDirectory.setText( jobEntry.getSourceDirectory() );
-		if (jobEntry.getMoveToDirectory()!= null) wMovetoDirectory.setText( jobEntry.getMoveToDirectory() );
+		wWildcard.setText( Const.NVL(jobEntry.getWildcard(), "") );
+		wWildcardExclude.setText( Const.NVL(jobEntry.getWildcardExclude(), "") );
+		wSourceDirectory.setText( Const.NVL(jobEntry.getSourceDirectory(), "") );
+		wMovetoDirectory.setText( Const.NVL(jobEntry.getMoveToDirectory(), "") );
 		if (jobEntry.afterzip>=0)
 		{
 			wAfterZip.select(jobEntry.afterzip );
@@ -1111,9 +1143,10 @@ public class JobEntryZipFileDialog extends JobEntryDialog implements JobEntryDia
 		wAddDate.setSelection(jobEntry.isDateInFilename());
 		wAddTime.setSelection(jobEntry.isTimeInFilename());
 		
-		if (jobEntry.getDateTimeFormat()!= null) wDateTimeFormat.setText( jobEntry.getDateTimeFormat() );
+		wDateTimeFormat.setText( Const.NVL(jobEntry.getDateTimeFormat(), "") );
 		wSpecifyFormat.setSelection(jobEntry.isSpecifyFormat());
 		wcreateMoveToDirectory.setSelection(jobEntry.isCreateMoveToDirectory());
+		wIncludeSubfolders.setSelection(jobEntry.isIncludingSubFolders());
 	}
 
 	private void cancel()
@@ -1156,15 +1189,11 @@ public class JobEntryZipFileDialog extends JobEntryDialog implements JobEntryDia
 		jobEntry.setSpecifyFormat(wSpecifyFormat.getSelection());
 		jobEntry.setDateTimeFormat(wDateTimeFormat.getText());
 		jobEntry.setCreateMoveToDirectory(wcreateMoveToDirectory.getSelection());
+		jobEntry.setIncludingSubFolders(wIncludeSubfolders.getSelection());
 		
 		dispose();
 	}
 	
-	public String toString()
-	{
-		return this.getClass().getName();
-	}
-
 	public boolean evaluates()
 	{
 		return true;
